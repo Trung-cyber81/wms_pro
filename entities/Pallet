@@ -1,0 +1,46 @@
+{
+  "name": "Pallet",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "T\u00ean ho\u1eb7c m\u00e3 Pallet"
+    },
+    "location_id": {
+      "type": "string",
+      "description": "ID v\u1ecb tr\u00ed ch\u1ee9a pallet"
+    },
+    "location_name": {
+      "type": "string",
+      "description": "T\u00ean v\u1ecb tr\u00ed (cache)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Ghi ch\u00fa"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_stock",
+        "exported"
+      ],
+      "default": "in_stock",
+      "description": "Tr\u1ea1ng th\u00e1i: in_stock = trong kho, exported = \u0111\u00e3 xu\u1ea5t kho"
+    },
+    "exported_date": {
+      "type": "string",
+      "description": "Ng\u00e0y xu\u1ea5t kho"
+    },
+    "exported_note": {
+      "type": "string",
+      "description": "Ghi ch\u00fa xu\u1ea5t kho"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "M\u00e3 v\u1ea1ch / QR"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

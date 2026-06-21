@@ -1,0 +1,107 @@
+{
+  "name": "Good",
+  "type": "object",
+  "properties": {
+    "sku": {
+      "type": "string",
+      "description": "M\u00e3 h\u00e0ng (SKU)"
+    },
+    "name": {
+      "type": "string",
+      "description": "T\u00ean h\u00e0ng h\u00f3a"
+    },
+    "order_id": {
+      "type": "string",
+      "description": "M\u00e3 \u0111\u01a1n h\u00e0ng"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Nh\u00e0 cung c\u1ea5p"
+    },
+    "damage_rate": {
+      "type": "number",
+      "description": "T\u1ef7 l\u1ec7 h\u01b0 h\u1ecfng (%)"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Tr\u1ecdng l\u01b0\u1ee3ng (kg)"
+    },
+    "received_date": {
+      "type": "string",
+      "description": "Ng\u00e0y nh\u1eadp kho (ISO string)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Ghi ch\u00fa n\u1ed9i b\u1ed9"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Box",
+        "Bulky"
+      ],
+      "description": "Lo\u1ea1i h\u00e0ng h\u00f3a"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "S\u1ed1 l\u01b0\u1ee3ng"
+    },
+    "pallet_id": {
+      "type": "string",
+      "description": "ID Pallet ch\u1ee9a h\u00e0ng"
+    },
+    "pallet_name": {
+      "type": "string",
+      "description": "T\u00ean Pallet (cache)"
+    },
+    "location_name": {
+      "type": "string",
+      "description": "T\u00ean v\u1ecb tr\u00ed (cache)"
+    },
+    "thang": {
+      "type": "number",
+      "description": "Th\u00e1ng (1-12)"
+    },
+    "quy": {
+      "type": "number",
+      "description": "Qu\u00fd (1-4)"
+    },
+    "nam": {
+      "type": "number",
+      "description": "N\u0103m (VD: 2025, 2026)"
+    },
+    "time_warning": {
+      "type": "boolean",
+      "description": "C\u1ea3nh b\u00e1o d\u1eef li\u1ec7u th\u1eddi gian kh\u00f4ng h\u1ee3p l\u1ec7"
+    },
+    "raw_time_text": {
+      "type": "string",
+      "description": "Chu\u1ed7i th\u1eddi gian g\u1ed1c t\u1eeb import (n\u1ebfu kh\u00f4ng parse \u0111\u01b0\u1ee3c)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_stock",
+        "exported"
+      ],
+      "default": "in_stock",
+      "description": "Tr\u1ea1ng th\u00e1i kho"
+    },
+    "exported_date": {
+      "type": "string",
+      "description": "Ng\u00e0y xu\u1ea5t kho (ISO string)"
+    },
+    "exported_note": {
+      "type": "string",
+      "description": "Ghi ch\u00fa khi xu\u1ea5t kho"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "M\u00e3 v\u1ea1ch / QR code"
+    }
+  },
+  "required": [
+    "name",
+    "type"
+  ]
+}

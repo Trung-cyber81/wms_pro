@@ -1,0 +1,21 @@
+{
+  "name": "Location",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "T\u00ean v\u1ecb tr\u00ed trong kho"
+    },
+    "code": {
+      "type": "string",
+      "description": "M\u00e3 v\u1ecb tr\u00ed"
+    },
+    "description": {
+      "type": "string",
+      "description": "M\u00f4 t\u1ea3 v\u1ecb tr\u00ed"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

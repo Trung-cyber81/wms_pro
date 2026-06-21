@@ -13,6 +13,42 @@ export default function ImportExcelModal({ open, onOpenChange, pallets, onImport
   const [preview, setPreview] = useState(null);
   const fileRef = useRef();
 
+  // Excel lưu ngày tháng dưới dạng số serial (vd: 46194 = một ngày nào đó
+  // trong năm 2026), không phải chuỗi "2026-06-18". Hàm này nhận diện cả 2
+  // trường hợp và luôn trả về chuỗi ngày ISO ("YYYY-MM-DD") hoặc null.
+  const normalizeExcelDate = (value) => {
+    if (value === '' || value == null) return null;
+
+    // Trường hợp 1: số serial của Excel (vd: 46194)
+    if (typeof value === 'number') {
+      const parsedDate = XLSX.SSF.parse_date_code(value);
+      if (!parsedDate) return null;
+      const yyyy = String(parsedDate.y).padStart(4, '0');
+      const mm = String(parsedDate.m).padStart(2, '0');
+      const dd = String(parsedDate.d).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Trường hợp 2: chuỗi ngày người dùng gõ tay (vd: "2026-06-18", "18/06/2026")
+    const str = String(value).trim();
+    if (!str) return null;
+
+    // dd/mm/yyyy hoặc dd-mm-yyyy
+    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) {
+      const [, d, m, y] = dmy;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    // yyyy-mm-dd (đã đúng chuẩn ISO)
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      return str.slice(0, 10);
+    }
+
+    // Không nhận diện được định dạng -> bỏ qua, không gửi giá trị rác lên DB
+    return null;
+  };
+
   const handleFileChange = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -55,7 +91,7 @@ export default function ImportExcelModal({ open, onOpenChange, pallets, onImport
           supplier: String(get('supplier') || '').trim(),
           damage_rate: get('damage_rate') !== '' ? Number(get('damage_rate')) : null,
           weight_kg: get('weight_kg') !== '' ? Number(get('weight_kg')) : null,
-          received_date: String(get('received_date') || '').trim() || null,
+          received_date: normalizeExcelDate(get('received_date')),
           notes: String(get('notes') || '').trim(),
           quy: parsed.quy,
           thang: parsed.thang,
@@ -81,92 +117,102 @@ export default function ImportExcelModal({ open, onOpenChange, pallets, onImport
     if (!preview) return;
     setImporting(true);
 
-    // --- 1. Auto-create missing Locations ---
-    const existingLocations = await base44.entities.Location.list();
-    const locationMap = {}; // name (lowercase) -> entity
-    existingLocations.forEach(l => { locationMap[l.name.toLowerCase()] = l; });
+    try {
+      // --- 1. Auto-create missing Locations ---
+      const existingLocations = await base44.entities.Location.list();
+      const locationMap = {}; // name (lowercase) -> entity
+      existingLocations.forEach(l => { locationMap[l.name.toLowerCase()] = l; });
 
-    const uniqueLocations = [...new Set(preview.map(r => (r.location || '').trim()).filter(Boolean))];
-    for (const locName of uniqueLocations) {
-      if (!locationMap[locName.toLowerCase()]) {
-        const created = await base44.entities.Location.create({ name: locName });
-        locationMap[locName.toLowerCase()] = created;
+      const uniqueLocations = [...new Set(preview.map(r => (r.location || '').trim()).filter(Boolean))];
+      for (const locName of uniqueLocations) {
+        if (!locationMap[locName.toLowerCase()]) {
+          const created = await base44.entities.Location.create({ name: locName });
+          locationMap[locName.toLowerCase()] = created;
+        }
       }
-    }
 
-    // --- 2. Auto-create missing Pallets ---
-    const existingPallets = await base44.entities.Pallet.list();
-    const palletMap = {}; // name (lowercase) -> entity
-    existingPallets.forEach(p => { palletMap[p.name.toLowerCase()] = p; });
+      // --- 2. Auto-create missing Pallets ---
+      const existingPallets = await base44.entities.Pallet.list();
+      const palletMap = {}; // name (lowercase) -> entity
+      existingPallets.forEach(p => { palletMap[p.name.toLowerCase()] = p; });
 
-    const uniquePallets = [...new Set(preview.map(r => (r.pallet || '').trim()).filter(Boolean))];
-    for (const pName of uniquePallets) {
-      if (!palletMap[pName.toLowerCase()]) {
-        // Find location for this pallet from any row that references it
-        const refRow = preview.find(r => (r.pallet || '').trim().toLowerCase() === pName.toLowerCase());
-        const locName = (refRow?.location || '').trim();
-        const loc = locName ? locationMap[locName.toLowerCase()] : null;
-        const created = await base44.entities.Pallet.create({
-          name: pName,
-          location_id: loc?.id || '',
-          location_name: loc?.name || locName,
+      const uniquePallets = [...new Set(preview.map(r => (r.pallet || '').trim()).filter(Boolean))];
+      for (const pName of uniquePallets) {
+        if (!palletMap[pName.toLowerCase()]) {
+          // Find location for this pallet from any row that references it
+          const refRow = preview.find(r => (r.pallet || '').trim().toLowerCase() === pName.toLowerCase());
+          const locName = (refRow?.location || '').trim();
+          const loc = locName ? locationMap[locName.toLowerCase()] : null;
+          const created = await base44.entities.Pallet.create({
+            name: pName,
+            location_id: loc?.id || null,
+            location_name: loc?.name || locName || null,
+            status: 'in_stock',
+          });
+          palletMap[pName.toLowerCase()] = created;
+        }
+      }
+
+      // --- 3. Create Goods with proper links ---
+      let successCount = 0;
+      let warningCount = 0;
+
+      for (const row of preview) {
+        const pKey = (row.pallet || '').trim().toLowerCase();
+        const matchPallet = pKey ? palletMap[pKey] : null;
+        const locName = matchPallet?.location_name || (row.location || '').trim();
+
+        const data = {
+          sku: row.sku || '',
+          name: row.name || 'Không tên',
+          type: row.type === 'Bulky' ? 'Bulky' : 'Box',
+          order_id: row.order_id || '',
+          supplier: row.supplier || '',
+          damage_rate: row.damage_rate != null ? Number(row.damage_rate) : null,
+          weight_kg: row.weight_kg != null ? Number(row.weight_kg) : null,
+          received_date: row.received_date || null,
+          notes: row.notes || '',
+          pallet_id: matchPallet?.id || null,
+          pallet_name: matchPallet?.name || null,
+          location_name: locName || null,
+          quantity: row.quantity || 0,
+          quy: row.quy,
+          thang: row.thang,
+          nam: row.nam,
+          time_warning: row.time_warning || false,
+          raw_time_text: row.raw_time_text || null,
           status: 'in_stock',
-        });
-        palletMap[pName.toLowerCase()] = created;
+        };
+
+        await base44.entities.Good.create(data);
+        successCount++;
+        if (row.time_warning) warningCount++;
       }
+
+      setFile(null);
+      setPreview(null);
+      onOpenChange(false);
+      onImportDone();
+
+      const newLocs = uniqueLocations.filter(l => !existingLocations.some(e => e.name.toLowerCase() === l.toLowerCase())).length;
+      const newPals = uniquePallets.filter(p => !existingPallets.some(e => e.name.toLowerCase() === p.toLowerCase())).length;
+      const extra = [newLocs > 0 && `${newLocs} vị trí`, newPals > 0 && `${newPals} pallet`].filter(Boolean).join(', ');
+
+      toast({
+        title: `Import thành công ${successCount} dòng`,
+        description: (extra ? `Tự động tạo: ${extra}. ` : '') +
+          (warningCount > 0 ? `${warningCount} dòng có cảnh báo thời gian.` : 'Tất cả dữ liệu đã được nhập đúng.'),
+      });
+    } catch (err) {
+      console.error('Import error:', err);
+      toast({
+        title: 'Import thất bại',
+        description: err?.message || 'Có lỗi xảy ra khi import dữ liệu. Xem chi tiết ở Console (F12).',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
     }
-
-    // --- 3. Create Goods with proper links ---
-    let successCount = 0;
-    let warningCount = 0;
-
-    for (const row of preview) {
-      const pKey = (row.pallet || '').trim().toLowerCase();
-      const matchPallet = pKey ? palletMap[pKey] : null;
-      const locName = matchPallet?.location_name || (row.location || '').trim();
-
-      const data = {
-        sku: row.sku || '',
-        name: row.name || 'Không tên',
-        type: row.type === 'Bulky' ? 'Bulky' : 'Box',
-        order_id: row.order_id || '',
-        supplier: row.supplier || '',
-        damage_rate: row.damage_rate != null ? Number(row.damage_rate) : null,
-        weight_kg: row.weight_kg != null ? Number(row.weight_kg) : null,
-        received_date: row.received_date || null,
-        notes: row.notes || '',
-        pallet_id: matchPallet?.id || '',
-        pallet_name: matchPallet?.name || '',
-        location_name: locName,
-        quantity: row.quantity || 0,
-        quy: row.quy,
-        thang: row.thang,
-        nam: row.nam,
-        time_warning: row.time_warning || false,
-        raw_time_text: row.raw_time_text || null,
-        status: 'in_stock',
-      };
-
-      await base44.entities.Good.create(data);
-      successCount++;
-      if (row.time_warning) warningCount++;
-    }
-
-    setImporting(false);
-    setFile(null);
-    setPreview(null);
-    onOpenChange(false);
-    onImportDone();
-
-    const newLocs = uniqueLocations.filter(l => !existingLocations.some(e => e.name.toLowerCase() === l.toLowerCase())).length;
-    const newPals = uniquePallets.filter(p => !existingPallets.some(e => e.name.toLowerCase() === p.toLowerCase())).length;
-    const extra = [newLocs > 0 && `${newLocs} vị trí`, newPals > 0 && `${newPals} pallet`].filter(Boolean).join(', ');
-
-    toast({
-      title: `Import thành công ${successCount} dòng`,
-      description: (extra ? `Tự động tạo: ${extra}. ` : '') +
-        (warningCount > 0 ? `${warningCount} dòng có cảnh báo thời gian.` : 'Tất cả dữ liệu đã được nhập đúng.'),
-    });
   };
 
   const warningRows = preview?.filter(r => r.time_warning) || [];

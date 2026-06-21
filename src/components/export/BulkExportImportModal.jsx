@@ -70,28 +70,38 @@ export default function BulkExportImportModal({ open, onOpenChange, pallets, goo
     const exportedDate = new Date().toISOString();
     let count = 0;
 
-    for (const row of preview) {
-      if (!row._found) continue;
-      const isPallet = (row.type || '').toLowerCase() === 'pallet';
-      const data = {
-        status: 'exported',
-        exported_date: row.exported_date || exportedDate,
-        exported_note: row.exported_note || ''
-      };
-      if (isPallet) {
-        await base44.entities.Pallet.update(row._found.id, data);
-      } else {
-        await base44.entities.Good.update(row._found.id, data);
+    try {
+      for (const row of preview) {
+        if (!row._found) continue;
+        const isPallet = (row.type || '').toLowerCase() === 'pallet';
+        const data = {
+          status: 'exported',
+          exported_date: row.exported_date || exportedDate,
+          exported_note: row.exported_note || ''
+        };
+        if (isPallet) {
+          await base44.entities.Pallet.update(row._found.id, data);
+        } else {
+          await base44.entities.Good.update(row._found.id, data);
+        }
+        count++;
       }
-      count++;
-    }
 
-    toast({ title: `Xuất kho hàng loạt thành công ${count} mục` });
-    setImporting(false);
-    setFile(null);
-    setPreview(null);
-    onDone();
-    onOpenChange(false);
+      toast({ title: `Xuất kho hàng loạt thành công ${count} mục` });
+      setFile(null);
+      setPreview(null);
+      onDone();
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Bulk export error:', err);
+      toast({
+        title: 'Xuất kho thất bại',
+        description: err?.message || 'Có lỗi xảy ra. Xem chi tiết ở Console (F12).',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
   };
 
   const validRows = preview?.filter(r => !r._notFound) || [];

@@ -25,6 +25,7 @@ export default function Goods() {
     sku: '', type: 'all', supplier: '',
     damageMin: '', damageMax: '',
     pallet: '', timeWarning: 'all',
+    order_id: '',
   });
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,7 +56,8 @@ export default function Goods() {
       const matchSearch = !search ||
         g.name?.toLowerCase().includes(search.toLowerCase()) ||
         g.pallet_name?.toLowerCase().includes(search.toLowerCase()) ||
-        g.location_name?.toLowerCase().includes(search.toLowerCase());
+        g.location_name?.toLowerCase().includes(search.toLowerCase()) ||
+        g.order_id?.toLowerCase().includes(search.toLowerCase());
       const matchQuy = filters.quy === 'all' || g.quy === Number(filters.quy);
       const matchThang = filters.thang === 'all' || g.thang === Number(filters.thang);
       const matchNam = filters.nam === 'all' || g.nam === Number(filters.nam);
@@ -63,6 +65,7 @@ export default function Goods() {
       const matchType = filters.type === 'all' || g.type === filters.type;
       const matchSupplier = !filters.supplier || g.supplier?.toLowerCase().includes(filters.supplier.toLowerCase());
       const matchPallet = !filters.pallet || g.pallet_name === filters.pallet;
+      const matchOrderId = !filters.order_id || g.order_id?.toLowerCase().includes(filters.order_id.toLowerCase());
       const damage = g.damage_rate ?? null;
       const matchDamageMin = !filters.damageMin || (damage !== null && damage >= Number(filters.damageMin));
       const matchDamageMax = !filters.damageMax || (damage !== null && damage <= Number(filters.damageMax));
@@ -72,7 +75,7 @@ export default function Goods() {
         (filters.timeWarning === 'ok' && !g.time_warning);
       return matchSearch && matchQuy && matchThang && matchNam &&
         matchSku && matchType && matchSupplier && matchPallet &&
-        matchDamageMin && matchDamageMax && matchWarning;
+        matchDamageMin && matchDamageMax && matchWarning && matchOrderId;
     });
   }, [allGoods, search, filters]);
 

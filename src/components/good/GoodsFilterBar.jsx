@@ -17,6 +17,7 @@ const DEFAULT_FILTERS = {
   damageMax: '',
   pallet: '',
   timeWarning: 'all',
+  order_id: '',
 };
 
 export default function GoodsFilterBar({ filters, onFilterChange, searchValue, onSearchChange, pallets = [] }) {
@@ -33,6 +34,7 @@ export default function GoodsFilterBar({ filters, onFilterChange, searchValue, o
     filters.thang !== 'all' && filters.thang,
     filters.nam !== 'all' && filters.nam,
     filters.sku,
+    filters.order_id,
     filters.type !== 'all' && filters.type,
     filters.supplier,
     filters.damageMin,
@@ -41,10 +43,6 @@ export default function GoodsFilterBar({ filters, onFilterChange, searchValue, o
     filters.timeWarning !== 'all' && filters.timeWarning,
   ].filter(Boolean).length;
 
-  const uniqueSuppliers = [...new Set(
-    // We pass suppliers from parent if needed — for now just show input
-  )];
-
   return (
     <div className="bg-card border border-border rounded-xl p-3 space-y-3">
       {/* Row 1: Search + toggle */}
@@ -52,7 +50,7 @@ export default function GoodsFilterBar({ filters, onFilterChange, searchValue, o
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Tìm tên hàng, pallet, vị trí..."
+            placeholder="Tìm tên hàng, mã ĐH, pallet, vị trí..."
             value={searchValue || ''}
             onChange={e => onSearchChange?.(e.target.value)}
             className="pl-8 h-8 text-xs bg-background"
@@ -93,6 +91,17 @@ export default function GoodsFilterBar({ filters, onFilterChange, searchValue, o
               placeholder="Nhập mã..."
               value={filters.sku || ''}
               onChange={e => onFilterChange({ ...filters, sku: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+
+          {/* Mã ĐH */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Mã ĐH</label>
+            <Input
+              placeholder="Nhập mã đơn hàng..."
+              value={filters.order_id || ''}
+              onChange={e => onFilterChange({ ...filters, order_id: e.target.value })}
               className="h-8 text-xs"
             />
           </div>

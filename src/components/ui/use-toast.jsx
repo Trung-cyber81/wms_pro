@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -110,6 +110,10 @@ function dispatch(action) {
   });
 }
 
+// ĐÃ TẮT TOÀN BỘ THÔNG BÁO (TOAST) TRONG APP.
+// Đặt về true để bật lại thông báo như cũ.
+const TOASTS_ENABLED = false;
+
 function toast({ ...props }) {
   const id = genId();
 
@@ -122,17 +126,19 @@ function toast({ ...props }) {
   const dismiss = () =>
     dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
 
-  dispatch({
-    type: actionTypes.ADD_TOAST,
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
+  if (TOASTS_ENABLED) {
+    dispatch({
+      type: actionTypes.ADD_TOAST,
+      toast: {
+        ...props,
+        id,
+        open: true,
+        onOpenChange: (open) => {
+          if (!open) dismiss();
+        },
       },
-    },
-  });
+    });
+  }
 
   return {
     id,
@@ -161,4 +167,4 @@ function useToast() {
   };
 }
 
-export { useToast, toast }; 
+export { useToast, toast };

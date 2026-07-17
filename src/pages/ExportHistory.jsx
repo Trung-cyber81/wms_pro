@@ -194,11 +194,11 @@ export default function ExportHistory() {
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Mã hàng</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Tên hàng</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Loại</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Mã đơn hàng</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider min-w-[70px]">Mã đơn hàng</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Nhà CC</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Pallet</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Vị trí</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">SL</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right min-w-[40px]">SL</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">HH%</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Ngày xuất</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Ghi chú xuất</TableHead>
@@ -217,7 +217,7 @@ export default function ExportHistory() {
                           {g.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[70px]">
                         {g.order_id ? (
                           <Badge variant="outline" className="text-[11px] font-mono">{g.order_id}</Badge>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
@@ -225,7 +225,7 @@ export default function ExportHistory() {
                       <TableCell className="text-xs text-muted-foreground">{g.supplier || '—'}</TableCell>
                       <TableCell className="text-sm">{g.pallet_name || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{g.location_name || '—'}</TableCell>
-                      <TableCell className="text-sm text-right font-mono">{g.quantity ?? 0}</TableCell>
+                      <TableCell className="text-sm text-right font-mono w-[40px]">{g.quantity ?? 0}</TableCell>
                       <TableCell className="text-right">
                         {g.damage_rate != null ? (
                           <Badge variant="outline" className={`text-[11px] ${g.damage_rate > 5 ? 'border-destructive text-destructive' : g.damage_rate > 0 ? 'border-orange-400 text-orange-600' : ''}`}>
